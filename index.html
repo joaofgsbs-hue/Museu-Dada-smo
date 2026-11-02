@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Museu Dadá</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #111; overflow: hidden; font-family: Georgia, serif; }
+  canvas { display: block; }
+  #overlay {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(10,10,10,.82); color: #f1ece1; text-align: center; z-index: 10; cursor: pointer;
+  }
+  #overlay .box { max-width: 560px; padding: 32px; }
+  #overlay h1 {
+    font-family: Impact, "Arial Black", sans-serif; font-size: clamp(44px, 9vw, 92px);
+    letter-spacing: 2px; margin: 0 0 6px; line-height: 1; text-transform: uppercase;
+  }
+  #overlay h1 span:nth-child(1) { color: #e63946; }
+  #overlay h1 span:nth-child(2) { color: #f1ece1; transform: rotate(-4deg); display: inline-block; }
+  #overlay h1 span:nth-child(3) { color: #ffd23f; display: inline-block; transform: rotate(3deg); }
+  #overlay p { margin: 10px 0; font-size: 17px; line-height: 1.5; }
+  .keys { display: inline-block; border: 1px solid #f1ece1; border-radius: 4px; padding: 1px 8px; margin: 0 2px; font-family: monospace; }
+  #start { margin-top: 18px; padding: 12px 32px; font-size: 18px; background: #e63946; color: #fff; border: 0; cursor: pointer; font-family: Impact, sans-serif; letter-spacing: 1px; }
+  #start:hover { background: #ffd23f; color: #111; }
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #cross { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: rgba(255,255,255,.7); mix-blend-mode: difference; }
+  #prompt {
+    position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%);
+    background: rgba(0,0,0,.7); color: #fff; padding: 10px 20px; border-radius: 3px;
+    font-size: 18px; opacity: 0; transition: opacity .2s;
+  }
+  #prompt.on { opacity: 1; }
+  #info {
+    position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%);
+    width: min(620px, 88vw); background: #f1ece1; color: #1a1a1a; padding: 28px 34px;
+    box-shadow: 0 10px 50px rgba(0,0,0,.6); border-left: 12px solid #e63946; display: none;
+  }
+  #info.on { display: block; }
+  #info h2 { font-family: Impact, "Arial Black", sans-serif; font-size: 32px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+  #info .meta { font-style: italic; color: #555; margin-bottom: 14px; }
+  #info p { font-size: 18px; line-height: 1.55; margin: 0 0 14px; white-space: pre-line; }
+  #info .hint { font-size: 13px; color: #888; margin: 0; }
+  #help { position: absolute; right: 14px; top: 12px; color: rgba(255,255,255,.7); font-size: 13px; text-shadow: 0 1px 3px #000; }
+</style>
+</head>
+<body>
+<div id="overlay">
+  <div class="box">
+    <h1><span>Museu</span> <span>Da</span><span>dá</span></h1>
+    <p>Exposição de arte dadaísta</p>
+    <p><span class="keys">W</span><span class="keys">A</span><span class="keys">S</span><span class="keys">D</span> andar &nbsp;·&nbsp; rato para olhar<br>
+       <span class="keys">E</span> ver a descrição do quadro &nbsp;·&nbsp; <span class="keys">Shift</span> correr<br>
+       <span class="keys">Esc</span> pausa</p>
+    <button id="start">ENTRAR</button>
+  </div>
+</div>
+<div id="hud">
+  <div id="cross"></div>
+  <div id="help">WASD andar · E descrição · Esc pausa</div>
+  <div id="prompt">Prime <b>E</b> para ver a descrição</div>
+  <div id="info">
+    <h2 id="i-titulo"></h2>
+    <div class="meta" id="i-meta"></div>
+    <p id="i-desc"></p>
+    <p class="hint">Prime E para fechar</p>
+  </div>
+</div>
+<script type="module" src="museu.js"></script>
+</body>
+</html>
