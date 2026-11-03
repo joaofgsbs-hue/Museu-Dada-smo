@@ -274,13 +274,13 @@ wallPoster(paperPoster([
   { t: "VOLTAIRE", s: 82 },
   { t: "ZÜRICH · 1916", s: 36, f: "Georgia, serif", c: "#1d3557" },
   { t: "Spiegelgasse 1", s: 28, f: "italic Georgia, serif", c: "#555" },
-], 1.7, 2.3, -0.03), -1, zMid2, 2.0);
+], 1.7, 2.3, -0.03), -1, zMid2, 2.52);
 wallPoster(paperPoster([
   { t: "SOIRÉE", s: 90, c: "#1d3557" },
   { t: "DADA", s: 110, c: "#e63946" },
   { t: "musique · poésie", s: 30, f: "italic Georgia, serif" },
   { t: "danse · bruit", s: 30, f: "italic Georgia, serif" },
-], 1.7, 2.3, 0.04), 1, zMid2, 2.0);
+], 1.7, 2.3, 0.04), 1, zMid2, 2.52);
 
 // poema fonético (Karawane) na parede direita
 const poem = [
@@ -310,7 +310,7 @@ const poemTex = canvasTex(768, 1000, (g, w, h) => {
   g.fillStyle = "#555"; g.font = "italic 26px Georgia"; g.textAlign = "center";
   g.fillText("Karawane — Hugo Ball, 1916", w / 2, h - 56);
 });
-wallPoster(new THREE.Mesh(new THREE.PlaneGeometry(1.75, 2.28), new THREE.MeshStandardMaterial({ map: poemTex, roughness: 0.9, envMapIntensity: 0.2 })), 1, zMid1, 2.05);
+wallPoster(new THREE.Mesh(new THREE.PlaneGeometry(1.75, 2.28), new THREE.MeshStandardMaterial({ map: poemTex, roughness: 0.9, envMapIntensity: 0.2 })), 1, zMid1, 2.55);
 
 // letreiro à entrada (voltado para dentro da sala, para quem olha para trás)
 const entrada = wordPanel("MUSEU DADAÍSMO", 5.4, 0.9, 3);
@@ -470,82 +470,299 @@ spotC.shadow.mapSize.set(1024, 1024);
 spotC.shadow.bias = -0.0005;
 scene.add(spotC, spotC.target);
 
-// ---------- mesas, cadeiras e velas ----------
+// ---------- mesas, cadeiras, bar, piano e detalhes ----------
 const circles = [];      // colisões circulares {x,z,r}
 const boxes = [];        // colisões em caixa {x0,x1,z0,z1}
 const candles = [];
 
-function chair(x, z, ry) {
-  const g = new THREE.Group();
-  const m = new THREE.MeshStandardMaterial({ color: 0x3a2412, roughness: 0.55, envMapIntensity: 0.5 });
-  box(0.42, 0.05, 0.42, m, 0, 0.45, 0, g);
-  box(0.42, 0.5, 0.04, m, 0, 0.72, -0.2, g);
-  box(0.04, 0.45, 0.04, m, -0.18, 0.22, 0.18, g);
-  box(0.04, 0.45, 0.04, m, 0.18, 0.22, 0.18, g);
-  box(0.04, 0.45, 0.04, m, -0.18, 0.22, -0.18, g);
-  box(0.04, 0.45, 0.04, m, 0.18, 0.22, -0.18, g);
-  g.position.set(x, 0, z);
-  g.rotation.y = ry;
-  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
-  scene.add(g);
+const brass = new THREE.MeshStandardMaterial({ color: 0xb08a3a, roughness: 0.3, metalness: 0.85, envMapIntensity: 1.3 });
+const ironMat = new THREE.MeshStandardMaterial({ color: 0x1b1816, roughness: 0.4, metalness: 0.7, envMapIntensity: 0.9 });
+const mahogany = new THREE.MeshStandardMaterial({ color: 0x4d210f, roughness: 0.33, metalness: 0.05, envMapIntensity: 0.9 });
+const glassMat = new THREE.MeshStandardMaterial({ color: 0xdfe8ee, roughness: 0.04, metalness: 0.1, transparent: true, opacity: 0.35, envMapIntensity: 1.5, depthWrite: false });
+const wineMat = new THREE.MeshStandardMaterial({ color: 0x5a0c18, roughness: 0.2, envMapIntensity: 0.8 });
+const waxMat = new THREE.MeshStandardMaterial({ color: 0xf3eadb, roughness: 0.8 });
+const flameMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffb04a).multiplyScalar(2.4) });
+
+const caneTex = canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = "#c9a35c"; g.fillRect(0, 0, w, h);
+  g.strokeStyle = "rgba(90,55,15,.55)"; g.lineWidth = 2;
+  for (let i = -h; i < w + h; i += 9) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke();
+    g.beginPath(); g.moveTo(i + h, 0); g.lineTo(i, h); g.stroke();
+  }
+}, [1, 1]);
+const caneMat = new THREE.MeshStandardMaterial({ map: caneTex, roughness: 0.85 });
+
+const marbleTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = "#ece8df"; g.fillRect(0, 0, w, h);
+  const r = rng(31);
+  for (let n = 0; n < 14; n++) {
+    g.strokeStyle = `rgba(110,105,100,${0.1 + r() * 0.25})`; g.lineWidth = 0.6 + r() * 1.8;
+    g.beginPath(); let x = r() * w, y = r() * h; g.moveTo(x, y);
+    for (let k = 0; k < 6; k++) { x += (r() - 0.5) * 90; y += (r() - 0.3) * 60; g.lineTo(x, y); }
+    g.stroke();
+  }
+});
+const marbleMat = new THREE.MeshStandardMaterial({ map: marbleTex, roughness: 0.18, metalness: 0.05, envMapIntensity: 1.1 });
+
+function tubeMesh(points, radius, mat, closed = false) {
+  const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)), closed, "catmullrom", 0.4);
+  return new THREE.Mesh(new THREE.TubeGeometry(curve, 56, radius, 6, closed), mat);
 }
 
-function table(x, z, seed) {
+// cadeira de café ao estilo Thonet (madeira curvada, assento de palhinha)
+function makeChair() {
   const g = new THREE.Group();
-  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 28), tableWood);
-  top.position.y = 0.76; g.add(top);
-  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.74, 12), darkMat);
-  leg.position.y = 0.37; g.add(leg);
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.03, 20), darkMat);
-  foot.position.y = 0.015; g.add(foot);
-  // vela
-  const wax = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.12, 10), new THREE.MeshStandardMaterial({ color: 0xf3eadb, roughness: 0.8 }));
-  wax.position.set(0.05, 0.85, 0.03); g.add(wax);
-  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffb04a).multiplyScalar(2.2) }));
-  flame.scale.y = 1.7; flame.position.set(0.05, 0.935, 0.03); g.add(flame);
+  const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.2, 0.035, 32), caneMat);
+  seat.position.y = 0.46; g.add(seat);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.016, 8, 32), mahogany);
+  rim.rotation.x = Math.PI / 2; rim.position.y = 0.46; g.add(rim);
+  for (const sx of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.02, 0.46, 8), mahogany);
+    leg.position.set(sx * 0.16, 0.23, 0.15); leg.rotation.z = sx * -0.05; leg.rotation.x = -0.05; g.add(leg);
+  }
+  // pernas traseiras + encosto: um só tubo curvado
+  g.add(tubeMesh([
+    [-0.17, 0.0, -0.19], [-0.165, 0.46, -0.16], [-0.18, 0.72, -0.2], [-0.12, 0.9, -0.235],
+    [0, 0.965, -0.245], [0.12, 0.9, -0.235], [0.18, 0.72, -0.2], [0.165, 0.46, -0.16], [0.17, 0.0, -0.19],
+  ], 0.014, mahogany));
+  // anel do encosto e aro de reforço sob o assento
+  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.011, 6, 28), mahogany);
+  loop.position.set(0, 0.72, -0.2); g.add(loop);
+  const brace = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.009, 6, 28), mahogany);
+  brace.rotation.x = Math.PI / 2; brace.position.y = 0.26; g.add(brace);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+const chairProto = makeChair();
+function chair(x, z, ry) {
+  const c = chairProto.clone();
+  c.position.set(x, 0, z);
+  c.rotation.y = ry;
+  scene.add(c);
+}
+
+// geometrias partilhadas
+const pedestalGeo = new THREE.LatheGeometry([
+  [0.3, 0], [0.3, 0.02], [0.2, 0.035], [0.1, 0.06], [0.055, 0.12], [0.05, 0.3], [0.075, 0.38], [0.045, 0.46],
+  [0.05, 0.6], [0.09, 0.7], [0.13, 0.725],
+].map(([x, y]) => new THREE.Vector2(x, y)), 36);
+const wineGlassGeo = new THREE.LatheGeometry([
+  [0, 0], [0.028, 0], [0.028, 0.004], [0.005, 0.012], [0.005, 0.07], [0.025, 0.088], [0.035, 0.12], [0.03, 0.15], [0.027, 0.152],
+].map(([x, y]) => new THREE.Vector2(x, y)), 20);
+const bottleGeo = new THREE.LatheGeometry([
+  [0, 0], [0.045, 0], [0.047, 0.03], [0.047, 0.17], [0.035, 0.22], [0.016, 0.26], [0.016, 0.31], [0.019, 0.315], [0, 0.315],
+].map(([x, y]) => new THREE.Vector2(x, y)), 18);
+const cupGeo = new THREE.LatheGeometry([
+  [0, 0], [0.025, 0], [0.04, 0.05], [0.045, 0.062], [0.04, 0.062], [0.03, 0.01],
+].map(([x, y]) => new THREE.Vector2(x, y)), 18);
+const vaseGeo = new THREE.LatheGeometry([
+  [0, 0], [0.025, 0], [0.04, 0.04], [0.02, 0.09], [0.03, 0.14], [0.034, 0.145], [0.026, 0.14],
+].map(([x, y]) => new THREE.Vector2(x, y)), 16);
+
+const newsTex = canvasTex(256, 192, (g, w, h) => {
+  g.fillStyle = "#e6dcc2"; g.fillRect(0, 0, w, h);
+  g.fillStyle = "#111"; g.font = "bold 46px Georgia"; g.textAlign = "center"; g.fillText("DADA", w / 2, 52);
+  g.fillRect(14, 62, w - 28, 3);
+  for (let i = 0; i < 9; i++) { g.fillRect(14, 78 + i * 11, w * (0.35 + Math.random() * 0.2), 3); g.fillRect(w / 2 + 6, 78 + i * 11, w * (0.2 + Math.random() * 0.25), 3); }
+});
+const newsMat = new THREE.MeshStandardMaterial({ map: newsTex, roughness: 0.95 });
+
+function addCandle(g, x, z, seed) {
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 0.012, 16), brass);
+  base.position.set(x, 0.783, z); g.add(base);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.014, 0.05, 10), brass);
+  stem.position.set(x, 0.815, z); g.add(stem);
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.016, 0.02, 12), brass);
+  cup.position.set(x, 0.85, z); g.add(cup);
+  const wax = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.13, 10), waxMat);
+  wax.position.set(x, 0.915, z); g.add(wax);
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 8), flameMat);
+  flame.scale.y = 1.9; flame.position.set(x, 1.005, z); g.add(flame);
   candles.push({ flame, phase: seed * 2.1 });
-  // copo e garrafa
-  const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 0.26, 12), new THREE.MeshStandardMaterial({ color: 0x1e5a3a, roughness: 0.15, metalness: 0.2 }));
-  bottle.position.set(-0.18, 0.92, -0.05); g.add(bottle);
-  const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.09, 12), new THREE.MeshStandardMaterial({ color: 0xcfd9e0, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.55 }));
-  glass.position.set(0.1, 0.83, -0.15); g.add(glass);
+}
+function addWineSet(g, x, z, ry) {
+  const s = new THREE.Group();
+  const b = new THREE.Mesh(bottleGeo, new THREE.MeshStandardMaterial({ color: 0x143a26, roughness: 0.12, metalness: 0.25, envMapIntensity: 1.2 }));
+  s.add(b);
+  for (const [gx, gz] of [[0.12, 0.03], [0.19, -0.05]]) {
+    const gl = new THREE.Mesh(wineGlassGeo, glassMat); gl.position.set(gx, 0, gz); s.add(gl);
+    const wn = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.02, 0.035, 14), wineMat); wn.position.set(gx, 0.1, gz); s.add(wn);
+  }
+  s.position.set(x, 0.775, z); s.rotation.y = ry; g.add(s);
+}
+function addNewspaper(g, x, z, ry) {
+  const n = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.006, 0.22), newsMat);
+  n.position.set(x, 0.781, z); n.rotation.y = ry; g.add(n);
+  const cup = new THREE.Mesh(cupGeo, new THREE.MeshStandardMaterial({ color: 0xf5f1e8, roughness: 0.2, envMapIntensity: 1 }));
+  cup.position.set(x + 0.12, 0.787, z - 0.08); g.add(cup);
+  const saucer = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.008, 18), new THREE.MeshStandardMaterial({ color: 0xf5f1e8, roughness: 0.2 }));
+  saucer.position.set(x + 0.12, 0.783, z - 0.08); g.add(saucer);
+}
+function addVase(g, x, z) {
+  const v = new THREE.Mesh(vaseGeo, new THREE.MeshStandardMaterial({ color: 0x1d3557, roughness: 0.2, metalness: 0.2, envMapIntensity: 1 }));
+  v.position.set(x, 0.775, z); g.add(v);
+  [[0, 0.16, 0xe63946], [0.02, 0.2, 0xffd23f], [-0.025, 0.18, 0xe63946]].forEach(([dx, hh, col], i) => {
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, hh, 5), new THREE.MeshStandardMaterial({ color: 0x2a6a2a }));
+    st.position.set(x + dx, 0.775 + hh / 2 + 0.04, z); st.rotation.z = dx * 6; g.add(st);
+    const fl = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshStandardMaterial({ color: col, roughness: 0.6 }));
+    fl.scale.y = 0.7; fl.position.set(x + dx * 1.4, 0.775 + hh + 0.05, z); g.add(fl);
+  });
+}
+
+function table(x, z, seed, variant) {
+  const g = new THREE.Group();
+  const ped = new THREE.Mesh(pedestalGeo, ironMat);
+  g.add(ped);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.03, 40), marbleMat);
+  top.position.y = 0.745 + 0.015 + 0.0; g.add(top);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.012, 8, 40), brass);
+  rim.rotation.x = Math.PI / 2; rim.position.y = 0.76; g.add(rim);
+  const under = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.5, 0.035, 36), ironMat);
+  under.position.y = 0.725; g.add(under);
+  addCandle(g, 0.02, 0.02, seed);
+  if (variant === 0) addWineSet(g, -0.22, -0.12, seed);
+  else { addNewspaper(g, -0.14, 0.14, seed * 0.5); addVase(g, 0.22, -0.18); }
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   g.position.set(x, 0, z);
   scene.add(g);
-  blob(1.6, 1.6, x, z);
+  blob(1.7, 1.7, x, z);
   for (let k = 0; k < 3; k++) {
     const a = seed + k * 2.1;
-    chair(x + Math.sin(a) * 0.82, z + Math.cos(a) * 0.82, a + Math.PI);
+    chair(x + Math.sin(a) * 0.8, z + Math.cos(a) * 0.8, a + Math.PI);
   }
   circles.push({ x, z, r: 1.15 });
 }
-table(-1.9, zMid1 + 0.2, 1.0);
-table(1.9, zMid1 - 0.2, 2.3);
-table(-1.9, zMid2 + 0.2, 3.7);
-table(1.9, zMid2 - 0.2, 5.1);
+
+// tapete comprido no corredor central (entrada → palco)
+const rugTex = canvasTex(256, 1024, (g, w, h) => {
+  g.fillStyle = "#6e1620"; g.fillRect(0, 0, w, h);
+  g.fillStyle = "#1b2745"; g.fillRect(0, 0, 34, h); g.fillRect(w - 34, 0, 34, h);
+  g.strokeStyle = "#d9b45a"; g.lineWidth = 4;
+  g.strokeRect(40, 6, w - 80, h - 12); g.strokeRect(10, 6, w - 20, h - 12);
+  for (let y = 70; y < h - 40; y += 120) {
+    g.fillStyle = "#1b2745";
+    g.beginPath(); g.moveTo(w / 2, y - 48); g.lineTo(w / 2 + 52, y); g.lineTo(w / 2, y + 48); g.lineTo(w / 2 - 52, y); g.closePath(); g.fill();
+    g.strokeStyle = "#d9b45a"; g.lineWidth = 3; g.stroke();
+    g.fillStyle = "#d9b45a"; g.beginPath(); g.arc(w / 2, y, 11, 0, 7); g.fill();
+  }
+  for (let n = 0; n < 2500; n++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+});
+const runner = new THREE.Mesh(new THREE.PlaneGeometry(2.0, L - 6.5), new THREE.MeshStandardMaterial({ map: rugTex, roughness: 0.95, envMapIntensity: 0.15 }));
+runner.rotation.x = -Math.PI / 2;
+runner.position.set(0, 0.007, -(L - 6.5) / 2 - 1.2);
+runner.receiveShadow = true;
+scene.add(runner);
+
+table(-1.9, zMid1 + 0.2, 1.0, 0);
+table(1.9, zMid1 - 0.2, 2.3, 1);
+table(-1.9, zMid2 + 0.2, 3.7, 1);
+table(1.9, zMid2 - 0.2, 5.1, 0);
 
 // ---------- bar à entrada ----------
+function stool(x, z) {
+  const g = new THREE.Group();
+  const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.07, 24), new THREE.MeshStandardMaterial({ color: 0x8c1c24, roughness: 0.4, envMapIntensity: 0.8 }));
+  seat.position.y = 0.72; g.add(seat);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.012, 8, 24), brass);
+  ring.rotation.x = Math.PI / 2; ring.position.y = 0.685; g.add(ring);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.65, 10), ironMat);
+  pole.position.y = 0.34; g.add(pole);
+  for (let k = 0; k < 3; k++) {
+    const a = k * 2.094;
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.45, 6), ironMat);
+    leg.position.set(Math.sin(a) * 0.11, 0.21, Math.cos(a) * 0.11);
+    leg.rotation.set(Math.cos(a) * 0.45, 0, -Math.sin(a) * 0.45);
+    g.add(leg);
+  }
+  const foot = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.008, 6, 24), brass);
+  foot.rotation.x = Math.PI / 2; foot.position.y = 0.26; g.add(foot);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  g.position.set(x, 0, z);
+  scene.add(g);
+  circles.push({ x, z, r: 0.28 });
+}
 {
   const bx = W / 2 - 0.55, bz = -3.2, len = 3.4;
-  box(0.8, 1.05, len, woodMat, bx, 0.525, bz);
-  box(0.95, 0.06, len + 0.1, tableWood, bx - 0.04, 1.08, bz);
-  // prateleira com garrafas na parede
-  box(0.25, 0.05, len - 0.2, woodMat, W / 2 - 0.15, 1.9, bz);
-  box(0.25, 0.05, len - 0.2, woodMat, W / 2 - 0.15, 2.45, bz);
-  const bc = [0x1e5a3a, 0x7a3e12, 0x1d3557, 0x8c1c13, 0xb8893a, 0x2a2a2a];
+  box(0.8, 1.05, len, panelMat, bx, 0.525, bz);                                     // balcão almofadado
+  box(0.98, 0.05, len + 0.1, marbleMat, bx - 0.05, 1.075, bz);                       // tampo de mármore
+  box(0.98, 0.025, len + 0.12, brass, bx - 0.05, 1.11, bz);                          // friso de latão
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, len - 0.2, 10), brass);   // apoio de pés
+  foot.rotation.x = Math.PI / 2; foot.position.set(bx - 0.46, 0.17, bz); scene.add(foot);
+  // prateleiras e espelho
+  const mirrorMat = new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: 0.08, metalness: 1, envMapIntensity: 1.6 });
+  box(0.03, 1.5, len - 0.1, mirrorMat, W / 2 - 0.03, 2.2, bz);
+  box(0.06, 1.62, len + 0.02, woodMat, W / 2 - 0.04, 2.2, bz);
+  for (const yy of [1.82, 2.4]) box(0.22, 0.04, len - 0.2, mahogany, W / 2 - 0.15, yy, bz);
+  const bc = [0x143a26, 0x7a3e12, 0x1d3557, 0x8c1c13, 0xb8893a, 0x2a2a2a];
   const r = rng(8);
   for (let i = 0; i < 12; i++) {
-    for (const [yy, sc] of [[1.93, 1], [2.48, 0.9]]) {
-      const bt = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.34 * sc, 10), new THREE.MeshStandardMaterial({ color: bc[(r() * bc.length) | 0], roughness: 0.2, metalness: 0.2 }));
-      bt.position.set(W / 2 - 0.15, yy + 0.19 * sc, bz - len / 2 + 0.3 + i * ((len - 0.6) / 11));
+    for (const [yy, sc] of [[1.84, 1], [2.42, 0.9]]) {
+      const bt = new THREE.Mesh(bottleGeo, new THREE.MeshStandardMaterial({ color: bc[(r() * bc.length) | 0], roughness: 0.15, metalness: 0.25, envMapIntensity: 1.1 }));
+      bt.scale.setScalar(sc * 0.95);
+      bt.position.set(W / 2 - 0.15, yy, bz - len / 2 + 0.3 + i * ((len - 0.6) / 11));
       scene.add(bt);
     }
   }
+  // bomba de cerveja e copos no balcão
+  const tapBase = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.05, 16), brass);
+  tapBase.position.set(bx - 0.05, 1.15, bz - 0.4); scene.add(tapBase);
+  const tapCol = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.28, 12), brass);
+  tapCol.position.set(bx - 0.05, 1.3, bz - 0.4); scene.add(tapCol);
+  const tapHead = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 10), new THREE.MeshStandardMaterial({ color: 0xf1ece1, roughness: 0.3 }));
+  tapHead.position.set(bx - 0.05, 1.46, bz - 0.4); scene.add(tapHead);
+  for (let k = 0; k < 4; k++) {
+    const gl = new THREE.Mesh(wineGlassGeo, glassMat);
+    gl.position.set(bx - 0.2, 1.1, bz + 0.3 + k * 0.28); scene.add(gl);
+  }
+  for (let k = 0; k < 3; k++) stool(bx - 0.95, bz - 0.9 + k * 0.9);
   const bl = new THREE.PointLight(0xffa850, 5, 5, 1.6);
   bl.position.set(W / 2 - 0.9, 2.2, bz);
   scene.add(bl);
   boxes.push({ x0: bx - 0.55, x1: W / 2, z0: bz - len / 2 - 0.1, z1: bz + len / 2 + 0.1 });
   blob(1.2, len + 0.5, bx, bz);
+}
+
+// ---------- piano de cabaret ----------
+{
+  const pz = -18.7, px = -W / 2;
+  const g = new THREE.Group();
+  box(0.62, 1.25, 1.55, mahogany, 0.31, 0.78, 0, g);                           // corpo
+  box(0.7, 0.05, 1.62, mahogany, 0.33, 1.42, 0, g);                            // tampo
+  box(0.4, 0.06, 1.5, mahogany, 0.8, 0.76, 0, g);                              // prateleira do teclado
+  const keysTex = canvasTex(1024, 160, (c, w, h) => {
+    c.fillStyle = "#f4efe4"; c.fillRect(0, 0, w, h);
+    c.strokeStyle = "#444"; c.lineWidth = 2;
+    const kw = w / 52;
+    for (let i = 0; i <= 52; i++) { c.beginPath(); c.moveTo(i * kw, 0); c.lineTo(i * kw, h); c.stroke(); }
+    c.fillStyle = "#111";
+    for (let i = 0; i < 52; i++) if ([0, 2, 3, 5, 6].includes(i % 7)) c.fillRect(i * kw + kw * 0.65, 0, kw * 0.7, h * 0.62);
+  });
+  const keys = new THREE.Mesh(new THREE.PlaneGeometry(1.42, 0.22), new THREE.MeshStandardMaterial({ map: keysTex, roughness: 0.4 }));
+  keys.rotation.set(-Math.PI / 2, 0, Math.PI / 2); keys.position.set(0.78, 0.795, 0); g.add(keys);
+  const desk = box(0.04, 0.38, 1.0, mahogany, 0.52, 1.05, 0, g); desk.rotation.z = 0.2;
+  const sheetTex2 = canvasTex(256, 128, (c, w, h) => { c.fillStyle = "#f2ecdd"; c.fillRect(0, 0, w, h); c.fillStyle = "#222"; for (let i = 0; i < 5; i++) c.fillRect(14, 22 + i * 18, w - 28, 2); });
+  const sheet = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.3), new THREE.MeshStandardMaterial({ map: sheetTex2, roughness: 0.9, side: THREE.DoubleSide }));
+  sheet.position.set(0.545, 1.07, 0); sheet.rotation.set(0, Math.PI / 2, 0.2); g.add(sheet);
+  for (const dz of [-0.3, 0, 0.3]) box(0.05, 0.14, 0.05, brass, 0.82, 0.12, dz, g);   // pedais
+  for (const dz of [-0.65, 0.65]) box(0.4, 0.2, 0.06, mahogany, 0.78, 0.65, dz, g);   // suportes
+  addCandle(g, 0.3, 0.55, 7);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  g.position.set(px, 0, pz);
+  scene.add(g);
+  // banco do piano
+  const st = new THREE.Group();
+  const ss = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.07, 26), new THREE.MeshStandardMaterial({ color: 0x1a0f0a, roughness: 0.5, envMapIntensity: 0.8 }));
+  ss.position.y = 0.52; st.add(ss);
+  for (const [lx, lz] of [[-0.14, -0.14], [0.14, -0.14], [-0.14, 0.14], [0.14, 0.14]]) {
+    const lg = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.02, 0.5, 8), mahogany); lg.position.set(lx, 0.25, lz); st.add(lg);
+  }
+  st.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  st.position.set(px + 1.55, 0, pz + 0.25);
+  scene.add(st);
+  blob(1.5, 2.0, px + 0.5, pz);
+  boxes.push({ x0: px, x1: px + 1.15, z0: pz - 0.85, z1: pz + 0.85 });
+  circles.push({ x: px + 1.55, z: pz + 0.25, r: 0.3 });
 }
 boxes.push({ x0: -STAGE_W / 2, x1: STAGE_W / 2, z0: -L, z1: STAGE_Z1 });   // palco
 
