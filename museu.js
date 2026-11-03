@@ -337,6 +337,7 @@ addEventListener("mouseup", () => { dragging = false; });
 addEventListener("keydown", (e) => {
   if (!started) return;
   const k = e.code;
+  if (k.startsWith("Arrow")) e.preventDefault();
   if (k === "KeyE") { e.preventDefault(); if (!e.repeat) toggleInfo(); return; }
   keys.add(k);
 });
@@ -360,14 +361,21 @@ const fwd = new THREE.Vector3(), tmp = new THREE.Vector3();
 const PED = new THREE.Vector2(0, -L + 3);
 
 function update(dt) {
+  // virar com as setas
+  if (started) {
+    if (keys.has("ArrowLeft")) yaw += 1.8 * dt;
+    if (keys.has("ArrowRight")) yaw -= 1.8 * dt;
+    if (keys.has("ArrowUp")) pitch = Math.min(1.35, pitch + 1.4 * dt);
+    if (keys.has("ArrowDown")) pitch = Math.max(-1.35, pitch - 1.4 * dt);
+  }
   // movimento
   if (started && !infoOpen) {
     const sp = (keys.has("ShiftLeft") || keys.has("ShiftRight") ? 5.2 : 2.8) * dt;
     let f = 0, s = 0;
-    if (keys.has("KeyW") || keys.has("ArrowUp")) f += 1;
-    if (keys.has("KeyS") || keys.has("ArrowDown")) f -= 1;
-    if (keys.has("KeyD") || keys.has("ArrowRight")) s += 1;
-    if (keys.has("KeyA") || keys.has("ArrowLeft")) s -= 1;
+    if (keys.has("KeyW")) f += 1;
+    if (keys.has("KeyS")) f -= 1;
+    if (keys.has("KeyD")) s += 1;
+    if (keys.has("KeyA")) s -= 1;
     if (f || s) {
       const len = Math.hypot(f, s);
       f /= len; s /= len;
