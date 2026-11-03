@@ -1,5 +1,6 @@
 import * as THREE from "./lib/three.module.min.js";
 import { OBRAS } from "./obras.js";
+import { HUGO_CONTORNO } from "./hugo-modelo.js";
 
 // ---------- parâmetros da sala ----------
 const W = 11;                        // largura
@@ -395,30 +396,42 @@ const footLight = new THREE.PointLight(0xff9040, 5, 7, 1.6);
 footLight.position.set(0, STAGE_H + 0.35, STAGE_Z1 - 0.5);
 scene.add(footLight);
 
-// ---------- Hugo Ball no Cabaret Voltaire, 1916 (recorte da fotografia do Karawane) ----------
+// ---------- Hugo Ball no Cabaret Voltaire, 1916 ----------
+// Objeto sólido em 3D com a silhueta exata da fotografia do Karawane (extrusão do contorno,
+// com espessura e bordas arredondadas) e a própria fotografia aplicada na frente.
 const hugo = new THREE.Group();
-const hugoParts = {};
-const HUGO_H = 2.35;                       // altura real do traje, com o chapéu
-const hugoTex = new THREE.TextureLoader().load("obras/hugo-ball-recorte.png", (t) => {
-  const asp = t.image.width / t.image.height;
-  hugoMesh.scale.set(HUGO_H * asp, HUGO_H, 1);
-  hugoMesh.position.y = HUGO_H / 2;
+const HUGO_H = 2.35;                                   // altura real do traje, com o chapéu
+const HUGO_W = HUGO_H * HUGO_CONTORNO.aspect;
+const HUGO_DEPTH = 0.2;
+const toV2 = (p) => new THREE.Vector2((p[0] - 0.5) * HUGO_W, (1 - p[1]) * HUGO_H);
+const hugoShape = new THREE.Shape(HUGO_CONTORNO.points.map(toV2));
+for (const h of HUGO_CONTORNO.holes) hugoShape.holes.push(new THREE.Path(h.map(toV2)));
+const hugoGeo = new THREE.ExtrudeGeometry(hugoShape, {
+  depth: HUGO_DEPTH, curveSegments: 1,
+  bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.025, bevelOffset: -0.025, bevelSegments: 5,
 });
+hugoGeo.translate(0, 0, -HUGO_DEPTH / 2);
+{
+  // projeção frontal da fotografia: uv a partir da posição
+  const pos = hugoGeo.attributes.position, uv = hugoGeo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getX(i) / HUGO_W + 0.5, pos.getY(i) / HUGO_H);
+  uv.needsUpdate = true;
+}
+const hugoTex = new THREE.TextureLoader().load("obras/hugo-ball-recorte.png");
 hugoTex.colorSpace = THREE.SRGBColorSpace;
 hugoTex.anisotropy = 8;
-const hugoMat = new THREE.MeshStandardMaterial({
-  map: hugoTex, color: 0x7a7a7a, emissiveMap: hugoTex, emissive: 0xffffff, emissiveIntensity: 0.22,
-  roughness: 0.9, metalness: 0, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, envMapIntensity: 0.1,
+const hugoFront = new THREE.MeshStandardMaterial({
+  map: hugoTex, color: 0x8a8a8a, emissiveMap: hugoTex, emissive: 0xffffff, emissiveIntensity: 0.2,
+  roughness: 0.85, metalness: 0, alphaTest: 0.3, side: THREE.DoubleSide, envMapIntensity: 0.15,
 });
-const hugoMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), hugoMat);
-hugoMesh.scale.set(HUGO_H * 0.34, HUGO_H, 1);
-hugoMesh.position.y = HUGO_H / 2;
+const hugoSide = new THREE.MeshStandardMaterial({ color: 0x8d8678, roughness: 0.9, metalness: 0, envMapIntensity: 0.1 });   // cartão
+const hugoMesh = new THREE.Mesh(hugoGeo, [hugoFront, hugoSide]);
 hugoMesh.castShadow = true;
+hugoMesh.receiveShadow = true;
 hugo.add(hugoMesh);
-hugoParts.mesh = hugoMesh;
 hugo.position.set(0, STAGE_H, -L + 2.8);
 scene.add(hugo);
-blob(1.3, 0.6, 0, -L + 2.8).position.y = STAGE_H + 0.015;
+blob(1.3, 0.7, 0, -L + 2.8).position.y = STAGE_H + 0.015;
 
 // estantes de partitura, com folhas do poema (Ball lia o poema nelas)
 const sheetTex = canvasTex(256, 192, (g, w, h) => {
@@ -789,7 +802,6 @@ function update(dt) {
   const tt = performance.now() * 0.001;
   // Hugo Ball: leve balanço a recitar
   hugo.rotation.y = Math.sin(tt * 0.6) * 0.07;
-  hugoMesh.scale.y = HUGO_H * (1 + Math.sin(tt * 1.7) * 0.004);
   for (const c of candles) c.flame.scale.set(1, 1.7 + Math.sin(tt * 9 + c.phase) * 0.25 + Math.sin(tt * 23 + c.phase) * 0.12, 1);
   for (const l of lamps) l.light.intensity = l.base * (1 + Math.sin(tt * 2.1 + l.phase) * 0.05 + Math.sin(tt * 7.3 + l.phase) * 0.03);
 }
