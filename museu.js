@@ -252,15 +252,17 @@ async function buildArt() {
 
     // placa
     const plaque = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.66, 0.35),
+      new THREE.PlaneGeometry(0.9, 0.48),
       new THREE.MeshStandardMaterial({
-        map: canvasTex(256, 136, (c, w, h) => {
+        map: canvasTex(512, 272, (c, w, h) => {
           c.fillStyle = "#f1ece1"; c.fillRect(0, 0, w, h);
-          c.fillStyle = "#e63946"; c.fillRect(0, 0, 8, h);
-          c.fillStyle = "#111"; c.font = "bold 18px Georgia"; c.textBaseline = "top";
-          wrapText(c, obra.titulo, 18, 12, w - 28, 22);
-          c.font = "italic 15px Georgia"; c.fillStyle = "#555";
-          c.fillText(`${obra.artista}, ${obra.ano}`, 18, h - 30);
+          c.fillStyle = "#e63946"; c.fillRect(0, 0, 14, h);
+          c.fillStyle = "#111"; c.font = "bold 34px Georgia"; c.textBaseline = "top";
+          const long = obra.titulo.length > 40;
+          if (long) c.font = "bold 24px Georgia";
+          wrapText(c, obra.titulo, 32, 18, w - 52, long ? 28 : 40);
+          c.font = "italic 28px Georgia"; c.fillStyle = "#555";
+          c.fillText(`${obra.artista}, ${obra.ano}`, 32, h - 52);
         }),
       })
     );
