@@ -347,7 +347,10 @@ const STAGE_H = 0.5, STAGE_W = 8.4;
 const stage = box(STAGE_W, STAGE_H, STAGE_D, new THREE.MeshStandardMaterial({ color: 0x2c1b0f, roughness: 0.6, envMapIntensity: 0.5 }), 0, STAGE_H / 2, -L + STAGE_D / 2);
 stage.receiveShadow = true;
 // "tábuas" no topo do palco
-const stageTop = box(STAGE_W, 0.02, STAGE_D, floorMat, 0, STAGE_H + 0.011, -L + STAGE_D / 2);
+const stageTex = floorTex.clone();
+stageTex.repeat.set(STAGE_W / 2.4, STAGE_D / 2.4);
+stageTex.needsUpdate = true;
+const stageTop = box(STAGE_W, 0.02, STAGE_D, new THREE.MeshStandardMaterial({ map: stageTex, roughness: 0.5, envMapIntensity: 0.6 }), 0, STAGE_H + 0.011, -L + STAGE_D / 2);
 stageTop.receiveShadow = true;
 box(STAGE_W, 0.08, 0.1, woodMat, 0, STAGE_H, STAGE_Z1);           // rebordo frontal
 
@@ -391,46 +394,125 @@ const footLight = new THREE.PointLight(0xff9040, 5, 7, 1.6);
 footLight.position.set(0, STAGE_H + 0.35, STAGE_Z1 - 0.5);
 scene.add(footLight);
 
-// ---------- figura do Karawane (traje de cartão do Hugo Ball) ----------
+// ---------- figura do Karawane: Hugo Ball no Cabaret Voltaire, 1916 ----------
+// Segundo o diário de Ball: pernas e corpo em cilindros de cartão azul brilhante ("como um obelisco"),
+// uma enorme gola de cartão escarlate por dentro e dourada por fora, que batia como asas,
+// e um alto chapéu cilíndrico de feiticeiro às riscas brancas e azuis.
 const hugo = new THREE.Group();
-const cardboard = (c, m = 0.05) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75, metalness: m, side: THREE.DoubleSide });
-for (const dx of [-0.11, 0.11]) {
-  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.85, 14), cardboard(0xefe9d6));
-  leg.position.set(dx, 0.43, 0); hugo.add(leg);
-  const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.28), darkMat);
-  shoe.position.set(dx, 0.04, 0.05); hugo.add(shoe);
+const hugoParts = {};
+const blueCard = new THREE.MeshStandardMaterial({ color: 0x1f4fa8, roughness: 0.28, metalness: 0.45, envMapIntensity: 1.1 });
+const paleBlue = new THREE.MeshStandardMaterial({ color: 0x6f97d8, roughness: 0.35, metalness: 0.35, envMapIntensity: 1 });
+const goldCard = new THREE.MeshStandardMaterial({ color: 0xd9a830, roughness: 0.3, metalness: 0.7, envMapIntensity: 1.2, flatShading: true });
+const scarletCard = new THREE.MeshStandardMaterial({ color: 0xc41e2a, roughness: 0.5, metalness: 0.1, side: THREE.BackSide, flatShading: true });
+const skin = new THREE.MeshStandardMaterial({ color: 0xe0bd9c, roughness: 0.7 });
+const dark = new THREE.MeshStandardMaterial({ color: 0x0d0b0a, roughness: 0.5 });
+
+// pernas (cilindros) e sapatos
+for (const dx of [-0.14, 0.14]) {
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.135, 0.62, 20), paleBlue);
+  leg.position.set(dx, 0.4, 0); hugo.add(leg);
+  const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.09, 0.34), dark);
+  shoe.position.set(dx, 0.045, 0.06); hugo.add(shoe);
 }
-const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.3, 0.7, 16), cardboard(0xe8e0c8));
-torso.position.y = 1.2; hugo.add(torso);
-const cape = new THREE.Mesh(new THREE.ConeGeometry(0.8, 0.8, 4, 1, true), cardboard(0x1d3557, 0.2));
-cape.rotation.y = Math.PI / 4; cape.position.y = 1.35; hugo.add(cape);   // gola/capa de cartão azul
-const collar = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.3, 4, 1, true), cardboard(0xe63946));
-collar.rotation.y = Math.PI / 4; collar.position.y = 1.72; hugo.add(collar);
-const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 18, 14), new THREE.MeshStandardMaterial({ color: 0xd9b99a, roughness: 0.7 }));
-head.position.y = 1.85; hugo.add(head);
-const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.62, 18), cardboard(0xf3eee0));  // chapéu alto
-hat.position.y = 2.18; hugo.add(hat);
-const hatStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.152, 0.152, 0.07, 18), cardboard(0xe63946));
-hatStripe.position.y = 2.05; hugo.add(hatStripe);
+// corpo em obelisco, com tiras de cartão
+const body = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.38, 1.0, 28), blueCard);
+body.position.y = 1.1; hugo.add(body);
+for (const y of [0.78, 1.12, 1.46]) {
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.3 + (1.6 - y) * 0.09 + 0.012, 0.3 + (1.6 - y) * 0.09 + 0.012, 0.035, 28), goldCard);
+  band.position.y = y; hugo.add(band);
+}
+
+// gola gigante: dourada por fora, escarlate por dentro (bate como asas)
+const collar = new THREE.Group();
+const collarGeo = new THREE.ConeGeometry(0.85, 0.42, 4, 1, true);
+const collarOut = new THREE.Mesh(collarGeo, goldCard);
+const collarIn = new THREE.Mesh(collarGeo, scarletCard);
+collarIn.scale.setScalar(0.985);
+collar.add(collarOut, collarIn);
+collar.rotation.y = Math.PI / 4;
+collar.scale.set(1.1, 1, 0.7);
+collar.position.y = 1.55;
+hugo.add(collar);
+hugoParts.collar = collar;
+const rosette = new THREE.Mesh(new THREE.OctahedronGeometry(0.075), new THREE.MeshStandardMaterial({ color: 0x8c0f1a, roughness: 0.4 }));
+rosette.scale.set(1.6, 1, 0.6); rosette.position.set(0, 1.5, 0.3); hugo.add(rosette);   // laço no peito
+
+// cabeça (com óculos) e chapéu alto às riscas azuis e brancas
+const headG = new THREE.Group();
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.135, 24, 18), skin);
+head.scale.set(1, 1.15, 1); headG.add(head);
+for (const ex of [-0.05, 0.05]) {
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 6), dark);
+  eye.position.set(ex, 0.03, 0.125); headG.add(eye);
+  const lens = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.005, 6, 18), dark);
+  lens.position.set(ex, 0.03, 0.128); headG.add(lens);
+}
+const nose = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.05, 6), skin);
+nose.position.set(0, -0.005, 0.14); nose.rotation.x = Math.PI / 2; headG.add(nose);
+const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.008, 0.01), dark);
+mouth.position.set(0, -0.06, 0.128); headG.add(mouth);
+headG.position.y = 1.92;
+hugo.add(headG);
+hugoParts.head = headG;
+
+const hatTex = canvasTex(256, 128, (g, w, h) => {
+  for (let x = 0; x < 16; x++) { g.fillStyle = x % 2 ? "#f3eee0" : "#1f4fa8"; g.fillRect(x * (w / 16), 0, w / 16 + 1, h); }
+});
+const hatMat = new THREE.MeshStandardMaterial({ map: hatTex, roughness: 0.6, metalness: 0.1, envMapIntensity: 0.6 });
+const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.155, 0.82, 32), hatMat);
+hat.position.y = 2.42; hugo.add(hat);
+const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xf3eee0, roughness: 0.6 }));
+hatTop.position.y = 2.83; hugo.add(hatTop);
+const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 32), new THREE.MeshStandardMaterial({ color: 0x1f4fa8, roughness: 0.4, metalness: 0.3 }));
+brim.position.y = 2.01; hugo.add(brim);
+
+// braços (mangas de cartão) e luvas grandes
 for (const s of [-1, 1]) {
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.7, 12), cardboard(0xefe9d6));
-  arm.position.set(s * 0.52, 1.05, 0.1); arm.rotation.z = s * 0.35; hugo.add(arm);
-  const glove = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.3, 6), cardboard(0x2a9d8f));
-  glove.position.set(s * 0.68, 0.66, 0.16); glove.rotation.z = Math.PI + s * 0.2; hugo.add(glove);
+  const arm = new THREE.Group();
+  const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.62, 16), blueCard);
+  sleeve.position.y = -0.31; arm.add(sleeve);
+  const glove = new THREE.Group();
+  const palm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.17, 0.05), goldCard);
+  glove.add(palm);
+  for (let f = -1; f <= 1; f++) {
+    const fing = new THREE.Mesh(new THREE.ConeGeometry(0.026, 0.14, 5), goldCard);
+    fing.position.set(f * 0.05, -0.15, 0); fing.rotation.z = Math.PI + f * 0.12; glove.add(fing);
+  }
+  glove.position.y = -0.74; arm.add(glove);
+  arm.position.set(s * 0.43, 1.48, 0.05);
+  arm.rotation.z = s * 0.18;
+  hugo.add(arm);
+  hugoParts[s === -1 ? "armL" : "armR"] = arm;
 }
 hugo.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 hugo.position.set(0, STAGE_H, -L + 2.8);
 scene.add(hugo);
 
-// estantes de partitura (Ball lia o poema em estantes)
+// estantes de partitura, com folhas do poema (Ball lia o poema nelas)
+const sheetTex = canvasTex(256, 192, (g, w, h) => {
+  g.fillStyle = "#f4efe2"; g.fillRect(0, 0, w, h);
+  g.fillStyle = "#333";
+  const r = rng(6);
+  for (let i = 0; i < 9; i++) g.fillRect(24, 22 + i * 17, 60 + r() * 150, 4);
+});
 for (const s of [-1, 1]) {
   const g = new THREE.Group();
-  box(0.04, 1.4, 0.04, darkMat, 0, 0.7, 0, g);
-  box(0.4, 0.03, 0.4, darkMat, 0, 0.02, 0, g);
-  const sheet = box(0.6, 0.42, 0.02, new THREE.MeshStandardMaterial({ color: 0xf3eee0, roughness: 0.9 }), 0, 1.4, 0, g);
-  sheet.rotation.x = -0.3;
-  g.position.set(s * 1.5, STAGE_H, -L + 3.0);
-  g.rotation.y = -s * 0.35;
+  // tripé
+  for (let k = 0; k < 3; k++) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.9, 5), darkMat);
+    const a = k * 2.094;
+    leg.position.set(Math.sin(a) * 0.14, 0.42, Math.cos(a) * 0.14);
+    leg.rotation.set(Math.cos(a) * 0.17, 0, -Math.sin(a) * 0.17);
+    g.add(leg);
+  }
+  box(0.025, 0.62, 0.025, darkMat, 0, 1.17, 0, g);
+  const rack = box(0.7, 0.02, 0.18, darkMat, 0, 1.32, 0.02, g);
+  rack.rotation.x = -0.35;
+  const sheet = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.5), new THREE.MeshStandardMaterial({ map: sheetTex, roughness: 0.9, side: THREE.DoubleSide }));
+  sheet.position.set(0, 1.58, 0); sheet.rotation.x = -0.28;
+  g.add(sheet);
+  g.position.set(s * 1.45, STAGE_H, -L + 3.0);
+  g.rotation.y = -s * 0.4;
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   scene.add(g);
 }
@@ -773,6 +855,12 @@ function update(dt) {
 
   // animações: velas e candeeiros a tremeluzir
   const tt = performance.now() * 0.001;
+  // Hugo Ball a recitar: balança, vira a cabeça e bate a gola como asas
+  hugo.rotation.y = Math.sin(tt * 0.5) * 0.14;
+  hugoParts.head.rotation.y = Math.sin(tt * 0.9) * 0.25;
+  hugoParts.collar.scale.y = 1 + Math.max(0, Math.sin(tt * 2.2)) * 0.1;
+  hugoParts.armL.rotation.z = -0.18 - Math.max(0, Math.sin(tt * 2.2)) * 0.22;
+  hugoParts.armR.rotation.z = 0.18 + Math.max(0, Math.sin(tt * 2.2)) * 0.22;
   for (const c of candles) c.flame.scale.set(1, 1.7 + Math.sin(tt * 9 + c.phase) * 0.25 + Math.sin(tt * 23 + c.phase) * 0.12, 1);
   for (const l of lamps) l.light.intensity = l.base * (1 + Math.sin(tt * 2.1 + l.phase) * 0.05 + Math.sin(tt * 7.3 + l.phase) * 0.03);
 }
