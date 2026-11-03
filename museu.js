@@ -168,7 +168,7 @@ function wordPanel(text, w, h, opts = {}) {
       g.save();
       g.translate(cell * (i + 0.5), ch / 2 + (r() - 0.5) * ch * 0.18);
       g.rotate((r() - 0.5) * 0.45);
-      const sz = ch * (0.55 + r() * 0.3);
+      const sz = Math.min(ch * (0.55 + r() * 0.3), cell * 1.05);
       g.font = `${sz}px Impact, "Arial Black", sans-serif`;
       g.textAlign = "center"; g.textBaseline = "middle";
       const m = g.measureText(chr);
@@ -186,7 +186,7 @@ function wordPanel(text, w, h, opts = {}) {
   return mesh;
 }
 
-const titulo = wordPanel("MUSEU DADÁ", 5.6, 1.2);   // parede do fundo, visível ao longo do corredor
+const titulo = wordPanel("MUSEU DADAÍSMO", 6.4, 1.2);   // parede do fundo, visível ao longo do corredor
 titulo.position.set(0, 3.25, -L + 0.01);
 scene.add(titulo);
 

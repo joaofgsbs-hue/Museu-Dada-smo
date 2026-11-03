@@ -1,4 +1,4 @@
-# Museu Dadá 3D
+# Museu Dadaísmo 3D
 
 Corredor de museu em 3D, em primeira pessoa. **WASD** para andar, rato para olhar, **E** para ver a descrição do quadro, **Shift** para correr, **Esc** para pausar.
 
